@@ -91,11 +91,11 @@ class Kinect(threading.Thread):
       self.done_running = True
 
    def add_joint(self, joint):
-      self.server.addMsgHandler(joint + '_pos_body', self.callback)
+      self.server.addMsgHandler(joint + '_pos_world', self.callback)
       self.active_joints[joint] = np.array([0.0, 0.0, 0.0])
 
    def remove_joint(self, joint):
-      self.server.delMsgHandler(joint + '_pos_body')
+      self.server.delMsgHandler(joint + '_pos_world')
       del self.active_joints[joint]
 
    def on_update(self):
@@ -108,7 +108,7 @@ class Kinect(threading.Thread):
          for j in self.active_joints:
             if send_heartbeat:
                #print 'heartbeat:', j
-               self.client.send( OSCMessage(j + "_trackjointpos", 1) )
+               self.client.send( OSCMessage(j + "_trackjointpos", 2) )
       except Exception as x:
          print x, 'sending to', self.client.client_address
 
@@ -120,7 +120,7 @@ class Kinect(threading.Thread):
 
    def callback(self, path, tags, args, source):
       #print path, args
-      joint_name = path.replace("_pos_body", "")
+      joint_name = path.replace("_pos_world", "")
       self.active_joints[joint_name] = np.array(args)
 
    def callback_tracking_skeleton(self, path, tags, args, source):
