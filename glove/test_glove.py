@@ -27,11 +27,22 @@ kUsingGlove = False
 class GloveWidget(BaseWidget):
   def __init__(self):
     super(GloveWidget, self).__init__()
-    self.audio_data = GloveAudioData("prelude.txt")
+    self.audio_data = GloveAudioData("prelude_notes.txt")
     self.audio_player = GloveAudioPlayer(self.audio_data, (0,0,0))
-    self.input = GloveInput(self.audio_player.play_next_note, kUsingGlove)
+    
+    self.note_data = GloveDisplayData("prelude_visuals.txt")
+    glove_pos = (400, 300)
+    #self.note_display = GloveNoteDisplay(glove_pos, "circletexture.png", self.note_data)
+    #self.canvas.add(self.note_display)
+
+    #self.input = GloveInput(self.audio_player.play_next_note, \
+     #   self.note_display.on_note_hit, kUsingGlove)
+    self.input = GloveInput(self.audio_player.play_next_note, \
+        None, kUsingGlove)
+    #self.scroller = Scroller(self.note_display)
     self.info = GloveInfo(self.input, self.audio_player.audio)
- 
+    self.add_widget(self.info)
+
   def on_key_down(self, keycode, modifiers):
     self.input.on_button_down(keycode)
 
@@ -43,5 +54,6 @@ class GloveWidget(BaseWidget):
     self.audio_player.on_update(dt)
     self.input.on_update()
     self.info.on_update()
+   # self.note_display.on_update(dt)
 
 run(GloveWidget)

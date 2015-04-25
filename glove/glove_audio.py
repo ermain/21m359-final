@@ -72,11 +72,14 @@ kSecondsPerQuarter = 0.5
 # keeps track of where we are in the song
 # plays next note
 class GloveAudioPlayer(object):
-  def __init__(self, data, settings):
+  def __init__(self, data, settings, synth, audio):
     super(GloveAudioPlayer, self).__init__()
     self.data = data
-    self.audio = Audio()
-    self.synth = Synth("../common/FluidR3_GM.sf2")
+    print "after audio data"
+    self.audio = audio
+    print "after audio creation"
+    self.synth = synth
+    print "after synth creation"
     self.chan, self.bank, self.preset = settings
     self.synth.program(*settings)
     self.audio.add_generator(self.synth)

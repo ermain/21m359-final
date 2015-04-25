@@ -7,6 +7,11 @@ from synth import *
 from audio import *
 from kinect import *
 
+sys.path.append('./glove')
+from glove_audio import *
+from glove_graphics import *
+from glove_input import *
+
 from kivy.uix.label import Label
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle, Triangle, Bezier
@@ -14,7 +19,7 @@ from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
 from kivy.clock import Clock as kivyClock
 
 
-from firebase import firebase
+#from firebase import firebase
 
 
 
@@ -87,8 +92,8 @@ class MainWidget(BaseWidget) :
       self.notePlayer = NotePlayer(self.synth,0)
       self.songPlayer = SongPlayer(self.notePlayer)
 
-      self.glassGraphics = GlassGraphics()
-      self.canvas.add(self.glassGraphics)
+      #self.glassGraphics = GlassGraphics()
+      #self.canvas.add(self.glassGraphics)
 
       self.nextNoteCueOnLeft =  True
       self.start = False
@@ -104,7 +109,7 @@ class MainWidget(BaseWidget) :
       self.canvas.add(self.line)
 
 
-      self.firebase = firebase.FirebaseApplication('https://glassinstrument.firebaseio.com', None)
+      #self.firebase = firebase.FirebaseApplication('https://glassinstrument.firebaseio.com', None)
       
       self.timeSinceLastNoteTriggered = 0
 
@@ -115,27 +120,40 @@ class MainWidget(BaseWidget) :
       self.gainLabel = Label(text = 'foo', pos = (50, 300), size = (150, 200), valign='top',
                          font_size='20sp')
       self.add_widget(self.gainLabel)
-   def on_key_down(self, keycode, modifiers):
-      if keycode[1] == '1':
-         self.songPlayer.playNextNote()
-         self.glassGraphics.drawFigure(self.audio.get_gain())
-      if keycode[1] == 'up':
-         #print self.audio.get_gain()
-         self.audio.set_gain(min(1,self.audio.get_gain()+0.05))
+   
+      # start glovestuff
+      self.glove_audio_data = GloveAudioData("./glove/prelude_notes.txt")
+      print "after data"
+      self.glove_audio_player = GloveAudioPlayer(self.glove_audio_data, (1,0,0), \
+         self.synth, self.audio) 
+      print "after audio" 
+      self.glove_input = GloveInput(self.glove_audio_player.play_next_note, \
+          None, False)
+      self.glove_info = GloveInfo(self.glove_input, self.glove_audio_player.audio)
+      self.add_widget(self.glove_info)
+      # end glovestuff
 
-      if keycode[1] == 'p':
-         self.start = True
-      if keycode[1] == 'down':
-         #print self.audio.get_gain()
-         self.audio.set_gain(max(0.01,self.audio.get_gain()-0.05))
+      self.start = True
+
+   def on_key_down(self, keycode, modifiers):
+      self.glove_input.on_button_down(keycode)
+      
+   def on_key_up(self, keycode):
+      self.glove_input.on_button_up(keycode)
 
    # handles changes to mode and strings
    def on_update(self) :
       
       dt = kivyClock.frametime
       
+      # start glovestuff
+      self.glove_audio_player.on_update(dt)
+      self.glove_input.on_update()
+      self.glove_info.on_update()
+      # end glovestuff
+
       #self.notePlayer.on_update(dt)
-      self.glassGraphics.on_update(dt, self.audio.get_gain())
+      #self.glassGraphics.on_update(dt, self.audio.get_gain())
       if self.start:
          if kUseGlass:
             self.timeSinceLastNoteTriggered += dt

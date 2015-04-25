@@ -1,5 +1,4 @@
 from __future__ import division
-
 #######################
 # GLOVE GRAPHICS file #
 #######################
@@ -11,8 +10,9 @@ from core import *
 from kivy.uix.label import Label
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle
-from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
+from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate, Mesh
 from kivy.clock import Clock as kivyClock
+from kivy.core.image import Image
 
 import random
 import numpy as np
@@ -23,12 +23,31 @@ from collections import namedtuple
 # shows info about the glove. for debugging purposes only.
 kShowGlobalConstants = True # in case we only want to display variables strictly
                             # related to the glove only
+class GloveDisplayData(object):
+  def __init__(self, filepath):
+    self.notes = []
+    self._read_in_data(filepath)
+
+  def _read_in_data(self, filepath):
+    num_gems = 0
+    with open(filepath) as f:
+      for line in f.readlines():
+        if ":" in line:
+          len, pattern = line.split(":")
+          len = 1/int(len) * 4 
+          for n in pattern:
+            if n in "12345":
+              self.notes.append((int(n)-1, len))
+
+  def get_all_notes(self):
+    return self.notes
+
 
 class GloveInfo(Widget):
   def __init__(self, glove_input, audio = None):
     super(GloveInfo, self).__init__()
-    self.label = Label(text = 'foo', pos = self.pos, size = (150, 400),\
-        valign='top', font_size='20sp')
+    self.label = Label(text = 'foo', pos = (100,100), size = (150, 400),\
+        valign='top', font_size='12sp')
     self.add_widget(self.label)
     self.glove_input = glove_input
     self.audio = audio
@@ -50,21 +69,46 @@ class GloveInfo(Widget):
     self.label.text += "finger state: %s \n" % " ".join(str(x) for x in finger_vals)
 
 # note head of the notes display
-class NoteHead(InstructionGroup):
-  w = 40
-  h = 30
-  def __init__(self, pos, color):
-    super(NoteHead, self).__init__()
-    self.pos = pos
-    self.color = Color(*color)
-    self.add(self.color)
-    self.head = Ellipse(segments = 40, angle_start = 0, angle_end = 15)
-    self.head.pos = self.pos
-    self.head.size = (self.w, self.h)
+class GloveNoteHead(InstructionGroup):
+  w = 20
+  h = 20
 
-  def set_pos(self, pos):
-    self.pos = pos
-    self.head.pos = pos
+  def __init__(self, pos, lane, lane_spacing, future_color, past_color, texture):
+    super(GloveNoteHead, self).__init__()
+    self.base_pos = pos
+    self.pos = (pos[0], pos[1] + lane*lane_spacing) 
+    self.lane_spacing = lane_spacing
+    self.future_color = future_color
+    self.past_color = past_color
+    self.color = Color(*future_color)
+    self.add(self.color)
+    self.mesh = Mesh()
+    self.mesh.indices = [0,1,2,3]
+    self.mesh.vertices = [\
+        self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
+        self.pos[0] - self.w/2, self.pos[1] + self.h/2, 0, 1,\
+        self.pos[0] + self.w/2, self.pos[1] - self.h/2, 1, 0,\
+        self.pos[0] + self.w/2, self.pos[1] + self.h/2, 1, 1\
+        ]
+    if texture:
+      self.mesh.texture = Image(texture).texture
+    self.mesh.mode = "triangle_strip"
+    self.add(self.mesh)
+  
+  def set_lane(self, lane):
+    self.pos = (self.base_pos[0], self.base_pos[1] + lane*self.lane_spacing)
+    self.mesh.vertices = [\
+        self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
+        self.pos[0] - self.w/2, self.pos[1] + self.h/2, 0, 1,\
+        self.pos[0] + self.w/2, self.pos[1] - self.h/2, 1, 0,\
+        self.pos[0] + self.w/2, self.pos[1] + self.h/2, 1, 1\
+        ]
+
+  def set_color_future(self):
+    self.color = Color(*self.future_color)
+
+  def set_color_past(self):
+    self.color = Color(*self.past_color)
 
   def set_color(self, color):
     self.color = Color(*color)
@@ -76,13 +120,55 @@ class NoteHead(InstructionGroup):
     self.remove(self.head)
 
 # collects all the note heads into a display
-class NoteDisplay(InstructionGroup):
-  def __init__(self, pos, callback):
-    super(NoteDisplay, self).__init__()
+class GloveNoteDisplay(InstructionGroup):
+  spacing_per_quarter = 100
+  spacing_per_lane = 30
+  future_color = (149/255, 165/255, 166/255)
+  past_color = (46/255, 204/255, 113/255)
+  speed_factor = 0.25
+
+  def __init__(self, pos, texture, data):
+    super(GloveNoteDisplay, self).__init__()
+    self.data = data
+    self.note_heads = []
+    self.start_pos = pos
+    cur_x = pos[0]
+    for n in data.get_all_notes():
+     self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
+         self.future_color, self.past_color, texture))
+     self.add(self.note_heads[-1])
+     cur_x += n[1] * self.spacing_per_quarter
+    self.translate = Translate()
+    self.add(PushMatrix())
+    self.add(self.translate)
+    self.add(PopMatrix())
+    self.x = 0
+    self.target_x = 0
+    self.next_note = 0
 
   def scroll(self, dx):
-    pass
+    self.target_x = self.x + dx
+
+  def scroll_to_next_note(self):
+    self.scroll(self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter)
 
   def on_update(self, dt):
-    pass
+    if self.x != self.target_x:
+      self.x += (self.target_x - self.x) * self.speed_factor
+      if self.translate.x >= self.target_x:
+        self.translate.x = self.target_x
+      else:
+        self.translate.x = self.x
 
+  # should be passed to the input driver as a callback
+  def on_note_hit(self, lane):
+    self.note_heads[self.next_note].set_color_past()
+    self.note_heads[self.next_note].set_lane(lane)
+    self.next_note += 1
+
+class Scroller(object):
+  def __init__(self, glove_display):
+    self.glove_display = glove_display
+    
+  def on_glove_hit(self):
+    self.glove_display.scroll_to_next_note()
