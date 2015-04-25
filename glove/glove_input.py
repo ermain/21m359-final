@@ -16,12 +16,12 @@ from collections import namedtuple
 
 
 class GloveInput(object):
-  def __init__(self, audio_callback, display_callback, using_real_glove = False):
+  def __init__(self, audio_callback, display_callback, scroller_callback, using_real_glove = False):
     super(GloveInput, self).__init__()
     if using_real_glove:
-      self.glove = HandGlove(audio_callback, display_callback)
+      self.glove = HandGlove(audio_callback, display_callback, scroller_callback)
     else:
-      self.glove = KeyboardGlove(audio_callback, display_callback)
+      self.glove = KeyboardGlove(audio_callback, display_callback, scroller_callback)
 
   def on_button_down(self, keycode):
     self.glove.on_button_down(keycode)
@@ -37,10 +37,11 @@ class GloveInput(object):
 
 class KeyboardGlove(object):
   keys = "12345"
-  def __init__(self, audio_callback, visual_callback):
+  def __init__(self, audio_callback, visual_callback, scroller_callback):
     super(KeyboardGlove, self).__init__()
     self.audio_callback = audio_callback
     self.visual_callback = visual_callback
+    self.scroller_callback = scroller_callback
     self.state = [False, False, False, False, False]
 
   def on_finger_down(self, lane):
@@ -48,6 +49,8 @@ class KeyboardGlove(object):
       self.audio_callback(lane)
     if self.visual_callback:
       self.visual_callback(lane)
+    if self.scroller_callback:
+      self.scroller_callback()
   
   def on_button_down(self, keycode):
     if keycode[1] in self.keys:
@@ -70,7 +73,7 @@ class HandGlove(object):
   max_val = 570
   min_val = 250
 
-  def __init__(self, audio_callback, visual_callback):
+  def __init__(self, audio_callback, visual_callback, scroller_callback):
     super(Glove, self).__init__()
     # set up serial
     self.ser = serial.Serial(\
@@ -82,6 +85,7 @@ class HandGlove(object):
           bytesize=serial.EIGHTBITS)
     self.audio_callback = audio_callback
     self.visual_callback = visual_callback
+    self.scroller_callback = scroller_callback
     self.state = [False,False,False,False,False]
   
   def on_update(self):
@@ -112,6 +116,8 @@ class HandGlove(object):
       self.audio_callback(lane)
     if self.visual_callback:
       self.visual_callback(lane)
+    if self.scroller_callback:
+      self.scroller_callback()
 
   def on_button_down(self, keycode):
     pass

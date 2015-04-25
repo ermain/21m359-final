@@ -39,6 +39,9 @@ class GloveDisplayData(object):
             if n in "12345":
               self.notes.append((int(n)-1, len))
 
+  def get_at_idx(self, idx):
+    return self.notes[idx]
+
   def get_all_notes(self):
     return self.notes
 
@@ -82,7 +85,7 @@ class GloveNoteHead(InstructionGroup):
     self.past_color = past_color
     self.color = Color(*future_color)
     self.add(self.color)
-    self.mesh = Mesh()
+    """self.mesh = Mesh()
     self.mesh.indices = [0,1,2,3]
     self.mesh.vertices = [\
         self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
@@ -94,21 +97,31 @@ class GloveNoteHead(InstructionGroup):
       self.mesh.texture = Image(texture).texture
     self.mesh.mode = "triangle_strip"
     self.add(self.mesh)
-  
+  """
+    self.circle = Ellipse(segments = 5)
+    self.circle.size = self.w*2, self.w*2
+    self.circle.pos = (self.pos[0] - self.w, self.pos[1] - self.w)
+    self.add(self.circle)
+
   def set_lane(self, lane):
     self.pos = (self.base_pos[0], self.base_pos[1] + lane*self.lane_spacing)
-    self.mesh.vertices = [\
+    self.circle.pos = (self.pos[0] - self.w, self.pos[1] - self.w)
+  """  self.mesh.vertices = [\
         self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
         self.pos[0] - self.w/2, self.pos[1] + self.h/2, 0, 1,\
         self.pos[0] + self.w/2, self.pos[1] - self.h/2, 1, 0,\
         self.pos[0] + self.w/2, self.pos[1] + self.h/2, 1, 1\
-        ]
+        ]"""
 
   def set_color_future(self):
-    self.color = Color(*self.future_color)
+    self.color.r = self.future_color[0]
+    self.color.g = self.future_color[1]
+    self.color.b = self.future_color[2]
 
   def set_color_past(self):
-    self.color = Color(*self.past_color)
+    self.color.r = self.past_color[0]
+    self.color.g = self.past_color[1]
+    self.color.b = self.past_color[2]
 
   def set_color(self, color):
     self.color = Color(*color)
@@ -129,36 +142,36 @@ class GloveNoteDisplay(InstructionGroup):
 
   def __init__(self, pos, texture, data):
     super(GloveNoteDisplay, self).__init__()
+    self.add(PushMatrix())
     self.data = data
-    self.note_heads = []
+    self.translate = Translate(0,0)
+    self.add(self.translate)
+    
     self.start_pos = pos
     cur_x = pos[0]
+    self.note_heads = []
     for n in data.get_all_notes():
      self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
          self.future_color, self.past_color, texture))
      self.add(self.note_heads[-1])
      cur_x += n[1] * self.spacing_per_quarter
-    self.translate = Translate()
-    self.add(PushMatrix())
-    self.add(self.translate)
-    self.add(PopMatrix())
     self.x = 0
     self.target_x = 0
     self.next_note = 0
+    self.add(PopMatrix())
 
   def scroll(self, dx):
-    self.target_x = self.x + dx
+    print "scrolling"
+    self.target_x = self.x - dx
 
   def scroll_to_next_note(self):
+    print self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter
     self.scroll(self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter)
 
   def on_update(self, dt):
-    if self.x != self.target_x:
+    if abs(self.x - self.target_x) > 0.01:
       self.x += (self.target_x - self.x) * self.speed_factor
-      if self.translate.x >= self.target_x:
-        self.translate.x = self.target_x
-      else:
-        self.translate.x = self.x
+      self.translate.x = self.x
 
   # should be passed to the input driver as a callback
   def on_note_hit(self, lane):

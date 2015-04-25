@@ -27,19 +27,21 @@ kUsingGlove = False
 class GloveWidget(BaseWidget):
   def __init__(self):
     super(GloveWidget, self).__init__()
+    self.audio = Audio()
+    self.synth = Synth("../common/FluidR3_GM.sf2")
     self.audio_data = GloveAudioData("prelude_notes.txt")
-    self.audio_player = GloveAudioPlayer(self.audio_data, (0,0,0))
+    self.audio_player = GloveAudioPlayer(self.audio_data, (0,0,0), self.synth, self.audio)
     
     self.note_data = GloveDisplayData("prelude_visuals.txt")
     glove_pos = (400, 300)
-    #self.note_display = GloveNoteDisplay(glove_pos, "circletexture.png", self.note_data)
-    #self.canvas.add(self.note_display)
+    self.note_display = GloveNoteDisplay(glove_pos, "circletexture.png", self.note_data)
+    self.canvas.add(self.note_display)
+    self.scroller = Scroller(self.note_display)
 
-    #self.input = GloveInput(self.audio_player.play_next_note, \
-     #   self.note_display.on_note_hit, kUsingGlove)
     self.input = GloveInput(self.audio_player.play_next_note, \
-        None, kUsingGlove)
-    #self.scroller = Scroller(self.note_display)
+       self.note_display.on_note_hit, self.scroller.on_glove_hit, kUsingGlove)
+    #self.input = GloveInput(self.audio_player.play_next_note, \
+    #    None, kUsingGlove)
     self.info = GloveInfo(self.input, self.audio_player.audio)
     self.add_widget(self.info)
 
@@ -54,6 +56,6 @@ class GloveWidget(BaseWidget):
     self.audio_player.on_update(dt)
     self.input.on_update()
     self.info.on_update()
-   # self.note_display.on_update(dt)
+    self.note_display.on_update(dt)
 
 run(GloveWidget)
