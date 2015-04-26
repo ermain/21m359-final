@@ -19,6 +19,9 @@ import numpy as np
 import bisect
 from collections import namedtuple
 
+sys.path.append('./topLine')
+from readFile import *
+
 # GloveInfo
 # shows info about the glove. for debugging purposes only.
 kShowGlobalConstants = True # in case we only want to display variables strictly
@@ -29,15 +32,35 @@ class GloveDisplayData(object):
     self._read_in_data(filepath)
 
   def _read_in_data(self, filepath):
+    # make a dictionary mapping notes in topline to their
+    # duration, where 1 = a quarter note
+    # this is used in GloveNoteHead to display a notehead for the
+    # solo lines above the 
+    songData = parseSong()
+    soloLineMap = {}
+    counter = 0
+    for x in songData.songElements:
+      soloLineMap[counter] = x
+      counter += float(x.duration)
+
     num_gems = 0
     with open(filepath) as f:
+      counter = 0
       for line in f.readlines():
         if ":" in line:
           len, pattern = line.split(":")
+
           len = 1/int(len) * 4 
+
           for n in pattern:
             if n in "12345":
-              self.notes.append((int(n)-1, len))
+              if counter in soloLineMap.keys():
+                soloNote = soloLineMap[counter]
+              else:
+                soloNote = False
+              self.notes.append((int(n)-1, len, soloNote))
+            counter += len
+
 
   def get_at_idx(self, idx):
     return self.notes[idx]
@@ -134,7 +157,7 @@ class GloveNoteHead(InstructionGroup):
 
 # collects all the note heads into a display
 class GloveNoteDisplay(InstructionGroup):
-  spacing_per_quarter = 100
+  spacing_per_quarter = 175
   spacing_per_lane = 30
   future_color = (149/255, 165/255, 166/255)
   past_color = (46/255, 204/255, 113/255)
@@ -150,15 +173,30 @@ class GloveNoteDisplay(InstructionGroup):
     self.start_pos = pos
     cur_x = pos[0]
     self.note_heads = []
+
+    self.topline_noteheads = []
     for n in data.get_all_notes():
-     self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
+      self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
          self.future_color, self.past_color, texture))
-     self.add(self.note_heads[-1])
-     cur_x += n[1] * self.spacing_per_quarter
+      if n[2] != False:
+        # add a notehead above the current notehead if there should be 
+        # a top solo line note there
+        g = GloveNoteHead((cur_x, pos[1]+200), 1, self.spacing_per_lane, \
+         self.future_color, self.past_color, texture)
+        if n[2].note != 'R':
+          self.add(g)
+        self.topline_noteheads.append(g)
+        
+
+      self.add(self.note_heads[-1])
+      cur_x += n[1] * self.spacing_per_quarter
+    
     self.x = 0
     self.target_x = 0
     self.next_note = 0
+    self.next_topline_note = 0
     self.add(PopMatrix())
+
 
   def scroll(self, dx):
     print "scrolling"
@@ -178,6 +216,12 @@ class GloveNoteDisplay(InstructionGroup):
     self.note_heads[self.next_note].set_color_past()
     self.note_heads[self.next_note].set_lane(lane)
     self.next_note += 1
+
+  def on_topline_note_hit(self):
+    # change color of note
+    notehead = self.topline_noteheads[self.next_topline_note]
+    notehead.set_color_past()
+    self.next_topline_note +=1
 
 class Scroller(object):
   def __init__(self, glove_display):

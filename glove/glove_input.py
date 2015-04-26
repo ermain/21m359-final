@@ -11,7 +11,7 @@ from core import *
 import random
 import numpy as np
 import bisect
-import serial
+#import serial
 from collections import namedtuple
 
 
