@@ -48,7 +48,7 @@ class SongElement():
 		return self.note + " " + self.duration + " " + self.dynamics
 
 def parseSong():
-	f = open('solo.txt', 'r')
+	f = open('./topLine/solo.txt', 'r')
 	sd = SongData()
 	for line in f:
 		line = line.split("//")[0]
