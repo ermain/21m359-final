@@ -35,7 +35,7 @@ class KinectTopLine(ToplineInput):
     self.scroller_callback = scroller_callback
 
     self.nextNoteCueOnLeft = True
-    self.joint = kJointRightHand
+    self.joint = kJointRightHand #kJointHead 
     self.kinect = Kinect()
     self.kinect.add_joint(self.joint)
 
@@ -52,6 +52,9 @@ class KinectTopLine(ToplineInput):
     gain = min(1,max(0.01,(norm_pt[1] - 0.3) / .4))
     self.songPlayer.updateGain(gain)
     super(KinectTopLine, self).updatePosition(norm_pt)
+
+def scaledX(x, min_val, max_val, a, b):
+   return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 
 
 class ScreenTopLine(ToplineInput):

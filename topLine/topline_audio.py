@@ -8,6 +8,7 @@ class SongPlayer(object):
       self.song = parseSong().songElements
       self.indexInSong = 0
       self.notePlayer = NotePlayer(synth, channel)
+      self.notePlaying = False
 
    def playNextNote(self):
       songElement = self.song[self.indexInSong]
@@ -16,8 +17,10 @@ class SongPlayer(object):
       dynamics = songElement.dynamics
       if pitch != None:
          self.notePlayer.play_note(pitch, 100, duration)
+         self.notePlaying = True
       else:
          self.notePlayer.stop_note()
+         self.notePlaying = False
       self.indexInSong += 1
 
    def updateGain(self, gain):

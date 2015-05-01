@@ -44,7 +44,7 @@ class MainWidget(BaseWidget) :
          self.synth, self.audio)  
     
       self.note_data = GloveDisplayData("./glove/prelude_visuals.txt")
-      glove_pos = (400, 100)
+      glove_pos = (400, 50)
       self.note_display = GloveNoteDisplay(glove_pos, "./glove/circletexture.png", self.note_data)
       self.canvas.add(self.note_display)
       self.scroller = Scroller(self.note_display)
@@ -94,5 +94,7 @@ class MainWidget(BaseWidget) :
          pt = [Window.mouse_pos[0], Window.mouse_pos[1], 0]
          self.topline_input.on_update(pt)
          self.songPlayer.on_update(dt)
+         self.topline_graphics.meshOn = self.songPlayer.notePlaying
+         self.topline_graphics.on_update(dt, Window.mouse_pos[1])
 
 run(MainWidget)
