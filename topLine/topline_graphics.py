@@ -5,7 +5,7 @@ from graphics import *
 
 from kivy.uix.label import Label
 from kivy.graphics.instructions import InstructionGroup
-from kivy.graphics import Mesh
+from kivy.graphics import Mesh, Rectangle
 from kivy.core.image import Image
 
 MESH_Y = 450.
@@ -23,15 +23,53 @@ class ToplineGraphics(InstructionGroup):
 
 		self.verticalLine = Line(points=[400,MESH_Y-MESH_HEIGHT,400,MESH_Y+MESH_HEIGHT])
 		self.add(self.verticalLine)
-
-		self.cursor = Cursor3D((780,MESH_HEIGHT*2), (10, MESH_Y-MESH_HEIGHT), gloveGraphics.future_color, False)
-		self.add(self.cursor)
+		
 
 		self.gloveGraphics = gloveGraphics
+		self.drawGameCursor()
+		self.color = Color(1,1,1)
+		self.add(self.color)
+
+		self.bodyImage = None
+		self.kinectJoint = None
+
+		self.cursorY = None
+
+	def updateKinectSelection(self, pos):
+		if self.kinectJoint:
+			self.remove(self.kinectJoint)
+		self.kinectJoint = Ellipse(segments = 40, size=(30,30), pos=(pos[0]-15,pos[1]-15) )
+		self.add(self.kinectJoint)
+
+	def settingsMode(self):
+		self.remove(self.cursor)
+
+		self.drawBodySelectionCursor()
+		self.updateKinectSelection((491,295))
+
+	def drawBodySelectionCursor(self):
+		self.bodyImage = Rectangle(source='body.jpg', pos=(250,50), size=(275,500))
+		self.add(self.bodyImage)
+		self.cursor = Cursor3D((800,600), (0, 0), (1,0,0), False)
+		self.add(self.cursor)
+
+	def duetMode(self):
+		self.remove(self.cursor)
+		if self.kinectJoint:
+			self.remove(self.kinectJoint)
+		if self.bodyImage:
+			self.remove(self.bodyImage)
+			self.bodyImage = None
+		self.drawGameCursor()
+
+	def drawGameCursor(self):
+		self.cursor = Cursor3D((780,MESH_HEIGHT*2), (10, MESH_Y-MESH_HEIGHT), self.gloveGraphics.future_color, False)
+		self.add(self.cursor)
+
 	def set_pos(self,pos):
 		pos[2] = 0.1
 		self.cursor.set_pos(pos)
-
+		self.cursorY = pos[1]
 	def note_hit(self):
 		self.gloveGraphics.on_topline_note_hit()
 
@@ -48,7 +86,7 @@ class ToplineGraphics(InstructionGroup):
 		self.meshBottom.vertices[5::8] = [MESH_Y for x in range(0,numPoints)]
 		self.meshBottom.vertices = self.mesh.vertices
 
-   	def on_update(self, dt, y):
+   	def on_update(self, dt,y):
 		self.timeSinceUpdate+=dt
 
 		if self.timeSinceUpdate > 0.01:
@@ -56,7 +94,7 @@ class ToplineGraphics(InstructionGroup):
 
 			verticalVerticies = self.mesh.vertices[5::8]
 			shiftedDown = verticalVerticies[1:]
-			y = scaledX(y,0,600,MESH_Y, MESH_Y+MESH_HEIGHT)
+			y = scaledX(y,0,1,MESH_Y, MESH_Y+MESH_HEIGHT)
 			shiftedDown.append(float(y))
 			if not self.meshOn:
 				shiftedDown = verticalVerticies[1:]

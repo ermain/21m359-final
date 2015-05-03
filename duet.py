@@ -13,9 +13,10 @@ from glove_input import *
 
 from kivy.uix.label import Label
 from kivy.graphics.instructions import InstructionGroup
-from kivy.graphics import Color, Ellipse, Line, Rectangle, Triangle, Bezier
+from kivy.graphics import Color, Ellipse, Line, Rectangle, Triangle
 from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
 from kivy.clock import Clock as kivyClock
+from kivy.core.image import Image
 
 sys.path.append('./topLine')
 from topline_audio import *
@@ -25,8 +26,9 @@ from topline_input import *
 import random
 import numpy as np
 
+from kinect import *
 
-kUseKinect = False 
+kUseKinect = True 
 kUsingGlove = False
 
 class MainWidget(BaseWidget) :
@@ -64,13 +66,31 @@ class MainWidget(BaseWidget) :
       self.topline_graphics = ToplineGraphics(self.note_display)
       self.canvas.add(self.topline_graphics)
 
-      self.topline_input = ToplineInput(self.songPlayer, self.topline_graphics, None,
-         kUseKinect)
+      if kUseKinect:
+         self.topline_input = KinectTopLine(self.songPlayer, self.topline_graphics)
+      else:
+         self.topline_input = ScreenTopLine(self.songPlayer, self.topline_graphics)
+
+   def on_touch_down(self,touch):
+      
+      print touch.pos
 
    def on_key_down(self, keycode, modifiers):
 
+      if keycode[1] == 'c':
+         self.topline_input.calibrateHeadHeight()
+
+      if keycode[1] == 's':
+         if self.topline_input.settingsMode == False:
+            self.start = True
+            self.topline_input.toSettingsMode()
+            self.songPlayer.pause()
+            self.topline_graphics.settingsMode()
+         
       if keycode[1] == 'p':
          self.start = True
+         self.topline_input.toPlayMode()
+         self.topline_graphics.duetMode()
 
       if self.start == True:
          self.glove_input.on_button_down(keycode)
@@ -93,8 +113,13 @@ class MainWidget(BaseWidget) :
          
          pt = [Window.mouse_pos[0], Window.mouse_pos[1], 0]
          self.topline_input.on_update(pt)
-         self.songPlayer.on_update(dt)
-         self.topline_graphics.meshOn = self.songPlayer.notePlaying
-         self.topline_graphics.on_update(dt, Window.mouse_pos[1])
+
+         if not self.topline_input.settingsMode:
+            self.songPlayer.on_update(dt)
+            self.topline_graphics.meshOn = self.songPlayer.notePlaying
+            self.topline_graphics.on_update(dt, self.songPlayer.notePlayer.currentGain)
+
+def scaledX(x, min_val, max_val, a, b):
+   return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 
 run(MainWidget)

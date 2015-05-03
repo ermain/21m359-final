@@ -29,6 +29,10 @@ class SongPlayer(object):
    def on_update(self,dt):
       self.notePlayer.on_update(dt)
 
+   def pause(self):
+      self.notePlayer.stop_note()
+      self.notePlaying = False
+
 class NotePlayer(object):
    def __init__(self, synth, channel):
       super(NotePlayer, self).__init__()
