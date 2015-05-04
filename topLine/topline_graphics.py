@@ -20,8 +20,8 @@ class ToplineGraphics(InstructionGroup):
 		self.meshOn = True
 		self.drawMesh()
 		self.timeSinceUpdate = 0
-
-		self.verticalLine = Line(points=[400,MESH_Y-MESH_HEIGHT,400,MESH_Y+MESH_HEIGHT])
+		self.add(Color((149/255, 165/255, 166/255)))
+		self.verticalLine = Line(points=[400,0,400,600])
 		self.add(self.verticalLine)
 		
 
@@ -45,7 +45,7 @@ class ToplineGraphics(InstructionGroup):
 		self.remove(self.cursor)
 
 		self.drawBodySelectionCursor()
-		self.updateKinectSelection((491,295))
+		#self.updateKinectSelection((491,295))
 
 	def drawBodySelectionCursor(self):
 		self.bodyImage = Rectangle(source='body.jpg', pos=(250,50), size=(275,500))

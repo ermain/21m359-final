@@ -94,10 +94,49 @@ class GloveInfo(Widget):
     finger_vals = self.glove_input.get_state()
     self.label.text += "finger state: %s \n" % " ".join(str(x) for x in finger_vals)
 
+
+class ToplineNoteHead(InstructionGroup):
+  def __init__(self, pos, duration, future_color, past_color, spacing_per_lane):
+    super(ToplineNoteHead, self).__init__()
+    self.pos = pos
+    self.duration = float(duration)
+    self.spacing_per_lane = spacing_per_lane
+
+    self.future_color = future_color
+    self.past_color = past_color
+    self.color = Color(*future_color)
+    self.add(self.color)
+
+    self.noteHead = Rectangle(pos=self.pos, size=(self.duration*(self.spacing_per_lane+4)*5, 50))
+    self.add(self.noteHead)
+
+  def set_lane(self, lane):
+    self.pos = (self.base_pos[0], self.base_pos[1] )
+    #self.circle.pos = (self.pos[0] - self.w, self.pos[1] - self.w)
+
+  def set_color_future(self):
+    self.color.r = self.future_color[0]
+    self.color.g = self.future_color[1]
+    self.color.b = self.future_color[2]
+
+  def set_color_past(self):
+    self.color.r = self.past_color[0]
+    self.color.g = self.past_color[1]
+    self.color.b = self.past_color[2]
+
+  def set_color(self, color):
+    self.color = Color(*color)
+
+  def show(self):
+    self.add(self.head)
+
+  def hide(self):
+    self.remove(self.head)
+
 # note head of the notes display
 class GloveNoteHead(InstructionGroup):
-  w = 20
-  h = 20
+  w = 15
+  h = 15
 
   def __init__(self, pos, lane, lane_spacing, future_color, past_color, texture):
     super(GloveNoteHead, self).__init__()
@@ -121,14 +160,14 @@ class GloveNoteHead(InstructionGroup):
     self.mesh.mode = "triangle_strip"
     self.add(self.mesh)
   """
-    self.circle = Ellipse(segments = 5)
+    self.circle = Rectangle(pos=self.pos)#Ellipse(segments = 5)
     self.circle.size = self.w*2, self.w*2
-    self.circle.pos = (self.pos[0] - self.w, self.pos[1] - self.w)
+    self.circle.pos = (self.pos[0] , self.pos[1] - self.w)
     self.add(self.circle)
 
   def set_lane(self, lane):
     self.pos = (self.base_pos[0], self.base_pos[1] + lane*self.lane_spacing)
-    self.circle.pos = (self.pos[0] - self.w, self.pos[1] - self.w)
+    self.circle.pos = (self.pos[0] , self.pos[1] - self.w)
   """  self.mesh.vertices = [\
         self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
         self.pos[0] - self.w/2, self.pos[1] + self.h/2, 0, 1,\
@@ -181,8 +220,8 @@ class GloveNoteDisplay(InstructionGroup):
       if n[2] != False:
         # add a notehead above the current notehead if there should be 
         # a top solo line note there
-        g = GloveNoteHead((cur_x, pos[1]+200), 1, self.spacing_per_lane, \
-         self.future_color, self.past_color, texture)
+        print cur_x
+        g = ToplineNoteHead((cur_x, pos[1]+200), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane)
         if n[2].note != 'R':
           self.add(g)
         self.topline_noteheads.append(g)
@@ -200,7 +239,7 @@ class GloveNoteDisplay(InstructionGroup):
 
   def scroll(self, dx):
     print "scrolling"
-    self.target_x = self.x - dx
+    self.target_x = self.target_x - dx
 
   def scroll_to_next_note(self):
     print self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter

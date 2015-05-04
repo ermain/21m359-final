@@ -11,7 +11,7 @@ from core import *
 import random
 import numpy as np
 import bisect
-#import serial
+import serial
 from collections import namedtuple
 
 
@@ -67,14 +67,14 @@ class KeyboardGlove(object):
     pass
 
 class HandGlove(object):
-  finger_thres = 0.6
+  finger_thres = 0.8
   max_line_size = 100
-  port = '/dev/tty.HC-06-DevB'
+  port = '/dev/tty.usbserial-AH00SBIQ' # '/dev/tty.HC-06-DevB'
   max_val = 570
   min_val = 250
 
   def __init__(self, audio_callback, visual_callback, scroller_callback):
-    super(Glove, self).__init__()
+    super(HandGlove, self).__init__()
     # set up serial
     self.ser = serial.Serial(\
           port=self.port,\
@@ -87,19 +87,27 @@ class HandGlove(object):
     self.visual_callback = visual_callback
     self.scroller_callback = scroller_callback
     self.state = [False,False,False,False,False]
+
+    self.first_update = True
   
   def on_update(self):
-    data_str = self.ser.readline()
-    self.state = self.parse_data(data_str)
+    if self.first_update:
+      self.first_update = False
+      self.ser.flushInput()
+    else:
+      data_str = self.ser.readline()
+      self.state = self.parse_data(data_str)
 
   def parse_data(self, data_str):
     data = data_str.split()
     fingers_down = []
-    for d in data[:4]:
+    for d in data[:5]:
       state = (int(d) - self.min_val)/(self.max_val - self.min_val)
       if state < self.finger_thres:
         fingers_down.append(True)
-        on_finger_down(len(fingers_down) - 1) # the finger pressed
+        idx = len(fingers_down) - 1
+        if not self.state[idx]:
+          self.on_finger_down(idx) # the finger pressed
 
       else:
         fingers_down.append(False)

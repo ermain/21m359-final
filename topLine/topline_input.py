@@ -85,7 +85,7 @@ class KinectTopLine(ToplineInput):
     #self.scroller_callback = scroller_callback
 
     self.nextNoteCueOnLeft = True
-    self.joint = kJointHead #kJointHead 
+    self.joint = kJointRightHand# kJointHead 
     self.kinect = Kinect()
     self.kinect.add_joint(self.joint)
     self.tempJoint = None
