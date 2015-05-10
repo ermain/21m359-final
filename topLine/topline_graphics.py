@@ -21,7 +21,8 @@ class ToplineGraphics(InstructionGroup):
 		self.drawMesh()
 		self.timeSinceUpdate = 0
 		self.add(Color((149/255, 165/255, 166/255)))
-		self.verticalLine = Line(points=[400,0,400,600])
+
+		self.verticalLine = Line(points=[Window.size[0]/2.,0,Window.size[0]/2,Window.size[1]])
 		self.add(self.verticalLine)
 		
 
@@ -70,8 +71,9 @@ class ToplineGraphics(InstructionGroup):
 		pos[2] = 0.1
 		self.cursor.set_pos(pos)
 		self.cursorY = pos[1]
+
 	def note_hit(self):
-		self.gloveGraphics.on_topline_note_hit()
+		return self.gloveGraphics.on_topline_note_hit()
 
 	def drawMesh(self):
 		imageFile = './topLine/background.png'

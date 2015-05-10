@@ -58,17 +58,18 @@ class ToplineInput(object):
 
     self.display_callback.set_pos(norm_pt)
     if not self.settingsMode: 
-      if self.nextNoteCueOnLeft and norm_pt[0] < 0.5:
-        self.nextNoteCueOnLeft = False
-      elif self.nextNoteCueOnLeft == False and norm_pt[0] > 0.5:
-        self.nextNoteCueOnLeft = True
-      else:
+      # check if next note triggered
+      if not (self.nextNoteCueOnLeft and norm_pt[0] < 0.5 or self.nextNoteCueOnLeft == False and norm_pt[0] > 0.5):
         return
-      self.songPlayer.playNextNote()
-      self.display_callback.note_hit()
-
-
-
+      
+      index = self.display_callback.note_hit()
+    
+      if index != False:
+        self.songPlayer.playNoteAtIndex(index)
+        if self.nextNoteCueOnLeft and norm_pt[0] < 0.5:
+          self.nextNoteCueOnLeft = False
+        elif self.nextNoteCueOnLeft == False and norm_pt[0] > 0.5:
+          self.nextNoteCueOnLeft = True
 
   def pointInRangeOf(self, ptToTest, centralPoint, threshold):
     x1 = ptToTest[0]
@@ -84,7 +85,7 @@ class KinectTopLine(ToplineInput):
     #self.display_callback = display_callback
     #self.scroller_callback = scroller_callback
 
-    self.nextNoteCueOnLeft = True
+    self.nextNoteCueOnLeft = False
     self.joint = kJointRightHand# kJointHead 
     self.kinect = Kinect()
     self.kinect.add_joint(self.joint)
@@ -153,7 +154,7 @@ class ScreenTopLine(ToplineInput):
   def __init__(self, songPlayer, display_callback):
     ToplineInput.__init__(self, songPlayer, display_callback)
 
-    self.nextNoteCueOnLeft = True
+    self.nextNoteCueOnLeft = False
 
   def on_update(self, pt):
     pt_min = np.array([0., 0., 0.])

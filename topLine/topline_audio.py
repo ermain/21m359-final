@@ -10,8 +10,9 @@ class SongPlayer(object):
       self.notePlayer = NotePlayer(synth, channel)
       self.notePlaying = False
 
-   def playNextNote(self):
-      songElement = self.song[self.indexInSong]
+   def playNoteAtIndex(self, index):
+      self.indexInSong = index
+      songElement = self.song[index]
       pitch = songElement.midiNumber
       duration = songElement.duration
       dynamics = songElement.dynamics
@@ -21,7 +22,7 @@ class SongPlayer(object):
       else:
          self.notePlayer.stop_note()
          self.notePlaying = False
-      self.indexInSong += 1
+      #self.indexInSong += 1
 
    def updateGain(self, gain):
       self.notePlayer.updateGain(gain)

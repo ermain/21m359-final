@@ -96,7 +96,7 @@ class GloveInfo(Widget):
 
 
 class ToplineNoteHead(InstructionGroup):
-  def __init__(self, pos, duration, future_color, past_color, spacing_per_lane):
+  def __init__(self, pos, duration, future_color, past_color, spacing_per_lane, locationInSong):
     super(ToplineNoteHead, self).__init__()
     self.pos = pos
     self.duration = float(duration)
@@ -109,6 +109,8 @@ class ToplineNoteHead(InstructionGroup):
 
     self.noteHead = Rectangle(pos=self.pos, size=(self.duration*(self.spacing_per_lane+4)*5, 50))
     self.add(self.noteHead)
+
+    self.locationInSong = locationInSong
 
   def set_lane(self, lane):
     self.pos = (self.base_pos[0], self.base_pos[1] )
@@ -128,10 +130,10 @@ class ToplineNoteHead(InstructionGroup):
     self.color = Color(*color)
 
   def show(self):
-    self.add(self.head)
+    self.add(self.noteHead)
 
   def hide(self):
-    self.remove(self.head)
+    self.remove(self.noteHead)
 
 # note head of the notes display
 class GloveNoteHead(InstructionGroup):
@@ -214,17 +216,20 @@ class GloveNoteDisplay(InstructionGroup):
     self.note_heads = []
 
     self.topline_noteheads = []
+    locationInSong = 0
     for n in data.get_all_notes():
       self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
          self.future_color, self.past_color, texture))
+
       if n[2] != False:
         # add a notehead above the current notehead if there should be 
         # a top solo line note there
-        print cur_x
-        g = ToplineNoteHead((cur_x, pos[1]+200), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane)
+
+        g = ToplineNoteHead((cur_x, pos[1]+200), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane, locationInSong)
         if n[2].note != 'R':
           self.add(g)
         self.topline_noteheads.append(g)
+        locationInSong += g.duration
         
 
       self.add(self.note_heads[-1])
@@ -238,11 +243,11 @@ class GloveNoteDisplay(InstructionGroup):
 
 
   def scroll(self, dx):
-    print "scrolling"
+    #print "scrolling"
     self.target_x = self.target_x - dx
 
   def scroll_to_next_note(self):
-    print self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter
+    #print self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter
     self.scroll(self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter)
 
   def on_update(self, dt):
@@ -256,12 +261,26 @@ class GloveNoteDisplay(InstructionGroup):
     self.note_heads[self.next_note].set_lane(lane)
     self.next_note += 1
 
+
+  def getTopLineNoteClosestToBottom(self):
+    locationInSong = self.next_note*0.25
+    for index, note in enumerate(self.topline_noteheads):
+      if note.locationInSong + note.duration > locationInSong:
+        return index
+
   def on_topline_note_hit(self):
     # change color of note
+    
     notehead = self.topline_noteheads[self.next_topline_note]
-    notehead.set_color_past()
-    self.next_topline_note +=1
 
+    if abs(notehead.locationInSong - self.next_note*0.25) <= 2:
+      notehead.set_color_past()
+      noteIndexToPlay = self.next_topline_note
+      self.next_topline_note += 1
+      return noteIndexToPlay
+    else:
+      self.next_topline_note = self.getTopLineNoteClosestToBottom()
+    return False
 class Scroller(object):
   def __init__(self, glove_display):
     self.glove_display = glove_display
