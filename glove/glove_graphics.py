@@ -94,7 +94,8 @@ class GloveInfo(Widget):
     finger_vals = self.glove_input.get_state()
     self.label.text += "finger state: %s \n" % " ".join(str(x) for x in finger_vals)
 
-
+MESH_Y = 350.
+MESH_HEIGHT = 200
 class ToplineNoteHead(InstructionGroup):
   def __init__(self, pos, duration, future_color, past_color, spacing_per_lane, locationInSong):
     super(ToplineNoteHead, self).__init__()
@@ -102,13 +103,33 @@ class ToplineNoteHead(InstructionGroup):
     self.duration = float(duration)
     self.spacing_per_lane = spacing_per_lane
 
+    future_color = (1,0,0)
+    #past_color = (1,0,0)
+
     self.future_color = future_color
     self.past_color = past_color
     self.color = Color(*future_color)
     self.add(self.color)
 
-    self.noteHead = Rectangle(pos=self.pos, size=(self.duration*(self.spacing_per_lane+4)*5, 50))
+    #self.noteHead = Rectangle(pos=self.pos, size=(self.duration*(self.spacing_per_lane+4)*5, 50))
+    
+    self.segments = 200
+   
+    imageFile = './topLine/background.png'
+    width = self.duration*(self.spacing_per_lane+4)*5
+    self.noteHead = make_ribbon_mesh(self.pos[0]+1, MESH_Y, width, MESH_Y, imageFile, self.segments)
+    numPoints = len(self.noteHead.vertices[5::8])
+    self.noteHead.vertices[5::8] = [MESH_Y+MESH_HEIGHT for x in range(0,numPoints)]
+    self.positionInMeshBeingUpdated = 0
     self.add(self.noteHead)
+
+    width = self.duration*(self.spacing_per_lane+4)*5
+    self.meshBottom = make_ribbon_mesh(self.pos[0]+1, MESH_Y, width, MESH_Y, imageFile, self.segments)
+    numPoints = len(self.meshBottom.vertices[5::8])
+    self.meshBottom.vertices[5::8] = [MESH_Y+MESH_HEIGHT for x in range(0,numPoints)]
+
+    #self.add(self.meshBottom)
+
 
     self.locationInSong = locationInSong
 
@@ -120,11 +141,13 @@ class ToplineNoteHead(InstructionGroup):
     self.color.r = self.future_color[0]
     self.color.g = self.future_color[1]
     self.color.b = self.future_color[2]
+    
 
   def set_color_past(self):
     self.color.r = self.past_color[0]
     self.color.g = self.past_color[1]
     self.color.b = self.past_color[2]
+
 
   def set_color(self, color):
     self.color = Color(*color)
@@ -134,6 +157,7 @@ class ToplineNoteHead(InstructionGroup):
 
   def hide(self):
     self.remove(self.noteHead)
+    self.remove(self.meshBottom)
 
 # note head of the notes display
 class GloveNoteHead(InstructionGroup):
@@ -229,7 +253,7 @@ class GloveNoteDisplay(InstructionGroup):
         # add a notehead above the current notehead if there should be 
         # a top solo line note there
 
-        g = ToplineNoteHead((cur_x, pos[1]+200), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane, locationInSong)
+        g = ToplineNoteHead((cur_x, pos[1]+400), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane, locationInSong)
         if n[2].note != 'R':
           self.add(g)
         self.topline_noteheads.append(g)
@@ -259,7 +283,7 @@ class GloveNoteDisplay(InstructionGroup):
     #print self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter
     self.scroll(self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter)
 
-  def on_update(self, dt):
+  def on_update(self, dt, y):
     if abs(self.x - self.target_x) > 0.01:
       self.x += (self.target_x - self.x) * self.speed_factor
       self.translate.x = self.x
@@ -272,6 +296,38 @@ class GloveNoteDisplay(InstructionGroup):
       self.note_heads[self.first_invisible_note].show()
       self.first_invisible_note += 1 # update pointer
 
+
+    mesh = self.topline_noteheads[self.next_topline_note-1].noteHead
+
+    #meshBottom = self.topline_noteheads[self.next_topline_note-1].meshBottom
+
+    verticalVerticies = mesh.vertices[5::8]
+    y = scaledX(y,0,1,MESH_Y, MESH_Y+MESH_HEIGHT)
+    toplineObject = self.topline_noteheads[self.next_topline_note-1]
+    position = toplineObject.positionInMeshBeingUpdated
+    if self.topline_noteheads[self.next_topline_note-1].positionInMeshBeingUpdated == 0:
+      shiftedDown = [y]*len(verticalVerticies)
+      shiftedDownBottom = shiftedDown
+      #shiftedDown = verticalVerticies
+      toplineObject.positionInMeshBeingUpdated += 1
+    else:
+      shiftedDown = verticalVerticies[1:]
+      shiftedDown.append(float(y))
+
+      shiftedDownBottom = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
+    #if not self.meshOn:
+    #  shiftedDown = verticalVerticies[1:]
+    #  shiftedDown.append(MESH_Y)
+    #  self.mesh.vertices[5::8] = [x for x in shiftedDown]
+    #  self.meshBottom.vertices[5::8] = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
+    #else:
+    mesh.vertices[5::8] = shiftedDown
+    #meshBottom.vertices[5::8] = shiftedDownBottom
+    #self.meshBottom.vertices[5::8] = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
+
+    self.topline_noteheads[self.next_topline_note-1].noteHead.vertices = mesh.vertices
+    #self.topline_noteheads[self.next_topline_note-1].meshBottom.vertices = meshBottom.vertices
+    #self.meshBottom.vertices = self.meshBottom.vertices
 
   # should be passed to the input driver as a callback
   def on_note_hit(self, lane):
@@ -299,9 +355,38 @@ class GloveNoteDisplay(InstructionGroup):
     else:
       self.next_topline_note = self.getTopLineNoteClosestToBottom()
     return False
+
+def scaledX(x, min_val, max_val, a, b):
+   return a + ((b-a)*(x-min_val)) / (max_val - min_val)
+
 class Scroller(object):
   def __init__(self, glove_display):
     self.glove_display = glove_display
     
   def on_glove_hit(self):
     self.glove_display.scroll_to_next_note()
+
+
+# a ribbon mesh has a matrix of verticies layed out as 2 x N+1 (rows x columns)
+# where N is the # of segments.
+def make_ribbon_mesh(x, y, w, h, tex_file, segments):
+   mesh = Mesh()
+
+   # create indicies
+   mesh.indices = range(segments * 2 + 2)
+
+   # create verticies with evenly spaced texture coordinates
+   span = np.linspace(0.0, 1.0, segments + 1)
+   verts = []
+   for s in span:
+      verts += [x + s * w, y, s, 0,  x + s * w, y+h, s, 1]
+   mesh.vertices = verts
+
+   # assign texture
+   if tex_file:
+      mesh.texture = Image(tex_file).texture
+
+   # standard triangle strip mode
+   mesh.mode = 'triangle_strip'
+
+   return mesh

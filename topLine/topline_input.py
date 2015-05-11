@@ -79,7 +79,7 @@ class ToplineInput(object):
     return math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 ) <= threshold
 
 class KinectTopLine(ToplineInput):
-  def __init__(self, songPlayer, display_callback):
+  def __init__(self, songPlayer, display_callback, ipAddress):
     ToplineInput.__init__(self, songPlayer, display_callback)
     #self.songPlayer = songPlayer
     #self.display_callback = display_callback
@@ -87,7 +87,7 @@ class KinectTopLine(ToplineInput):
 
     self.nextNoteCueOnLeft = False
     self.joint = kJointRightHand# kJointHead 
-    self.kinect = Kinect()
+    self.kinect = Kinect(ipAddress)
     self.kinect.add_joint(self.joint)
     self.tempJoint = None
 
