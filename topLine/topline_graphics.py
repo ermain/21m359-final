@@ -15,10 +15,12 @@ class ToplineGraphics(InstructionGroup):
 	def __init__(self, gloveGraphics):
 		super(ToplineGraphics, self).__init__()
 
+
+
 		self.segments = 800
 
 		self.meshOn = True
-		self.drawMesh()
+		#self.drawMesh()
 		self.timeSinceUpdate = 0
 		self.add(Color((149/255, 165/255, 166/255)))
 
@@ -35,6 +37,10 @@ class ToplineGraphics(InstructionGroup):
 		self.kinectJoint = None
 
 		self.cursorY = None
+
+		#self.add(Color(1,1,1))
+		#r = Rectangle(pos=(0,450), size = (Window.size[0],50))
+		#self.add( r )
 
 	def updateKinectSelection(self, pos):
 		if self.kinectJoint:
@@ -73,7 +79,10 @@ class ToplineGraphics(InstructionGroup):
 		self.cursorY = pos[1]
 
 	def note_hit(self):
-		return self.gloveGraphics.on_topline_note_hit()
+		
+		indexOfNote = self.gloveGraphics.on_topline_note_hit()
+
+		return indexOfNote
 
 	def drawMesh(self):
 		imageFile = './topLine/background.png'
@@ -88,7 +97,9 @@ class ToplineGraphics(InstructionGroup):
 		self.meshBottom.vertices[5::8] = [MESH_Y for x in range(0,numPoints)]
 		self.meshBottom.vertices = self.mesh.vertices
 
+
    	def on_update(self, dt,y):
+   		'''
 		self.timeSinceUpdate+=dt
 
 		if self.timeSinceUpdate > 0.01:
@@ -112,7 +123,7 @@ class ToplineGraphics(InstructionGroup):
 			self.meshBottom.vertices = self.meshBottom.vertices
 
 		#self.time += kivyClock.frametime
-
+		'''
 def scaledX(x, min_val, max_val, a, b):
    return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 

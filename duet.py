@@ -31,6 +31,10 @@ from kinect import *
 kUseKinect = False 
 kUsingGlove = False
 
+# if this is set, assume Kinect/Synapse is running on a remote machine
+# and send/receive from that ip address
+kinect_remote_ip = None
+
 class MainWidget(BaseWidget) :
    def __init__(self):
       super(MainWidget, self).__init__()
@@ -68,7 +72,7 @@ class MainWidget(BaseWidget) :
       self.canvas.add(self.topline_graphics)
       self.canvas.add(self.note_display)
       if kUseKinect:
-         self.topline_input = KinectTopLine(self.songPlayer, self.topline_graphics)
+         self.topline_input = KinectTopLine(self.songPlayer, self.topline_graphics, kinect_remote_ip)
       else:
          self.topline_input = ScreenTopLine(self.songPlayer, self.topline_graphics)
 
@@ -106,7 +110,7 @@ class MainWidget(BaseWidget) :
          self.glove_audio_player.on_update(dt)
          self.glove_input.on_update()
          self.glove_info.on_update()
-         self.note_display.on_update(dt)
+         
          # end glovestuff
          
          pt = [Window.mouse_pos[0], Window.mouse_pos[1], 0]
@@ -117,7 +121,18 @@ class MainWidget(BaseWidget) :
             self.topline_graphics.meshOn = self.songPlayer.notePlaying
             self.topline_graphics.on_update(dt, self.songPlayer.notePlayer.currentGain)
 
+         self.note_display.on_update(dt, self.songPlayer.notePlayer.currentGain)
 def scaledX(x, min_val, max_val, a, b):
    return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 
+#run(MainWidget)
+
+#kinect_remote_ip
+
+if len(sys.argv) >=2:
+   kinect_remote_ip = sys.argv[1]
+   print 'Using %s as IP address for machine running Synapse' % kinect_remote_ip
+
+# pass in which MainWidget to run as a command-line arg
 run(MainWidget)
+
