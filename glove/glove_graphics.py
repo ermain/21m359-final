@@ -165,7 +165,6 @@ class GloveNoteHead(InstructionGroup):
     self.circle = Rectangle(pos=self.pos)#Ellipse(segments = 5)
     self.circle.size = self.w*2, self.w*2
     self.circle.pos = (self.pos[0] , self.pos[1] - self.w)
-    self.add(self.circle)
 
   def set_lane(self, lane):
     self.pos = (self.base_pos[0], self.base_pos[1] + lane*self.lane_spacing)
@@ -191,10 +190,13 @@ class GloveNoteHead(InstructionGroup):
     self.color = Color(*color)
 
   def show(self):
-    self.add(self.head)
+    self.add(self.circle)
 
   def hide(self):
-    self.remove(self.head)
+    self.remove(self.circle)
+  
+  def get_x(self):
+    return self.pos[0]
 
 # collects all the note heads into a display
 class GloveNoteDisplay(InstructionGroup):
@@ -214,13 +216,15 @@ class GloveNoteDisplay(InstructionGroup):
     self.start_pos = pos
     cur_x = pos[0]
     self.note_heads = []
-
+    self.first_invisible_note = -1
     self.topline_noteheads = []
     locationInSong = 0
+    just_added = True
+    counter = 0
     for n in data.get_all_notes():
       self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
          self.future_color, self.past_color, texture))
-
+      self.add(self.note_heads[-1]) # we add the notes here but make sure to not add in the actual GloveNoteHead object
       if n[2] != False:
         # add a notehead above the current notehead if there should be 
         # a top solo line note there
@@ -230,17 +234,22 @@ class GloveNoteDisplay(InstructionGroup):
           self.add(g)
         self.topline_noteheads.append(g)
         locationInSong += g.duration
-        
-
-      self.add(self.note_heads[-1])
+      
+      # show only a small set of notes
+      if cur_x <= 2 * Window.width:
+        self.note_heads[-1].show() # explicitly show here
+      else:
+        if just_added:
+          self.first_invisible_note = counter # pointer to first invisible note (to be added)
+          just_added = False
       cur_x += n[1] * self.spacing_per_quarter
-    
+      counter += 1 
     self.x = 0
     self.target_x = 0
     self.next_note = 0
     self.next_topline_note = 0
+    self.first_visible_note = 0 # pointer to first visible note (to be removed)
     self.add(PopMatrix())
-
 
   def scroll(self, dx):
     #print "scrolling"
@@ -254,6 +263,15 @@ class GloveNoteDisplay(InstructionGroup):
     if abs(self.x - self.target_x) > 0.01:
       self.x += (self.target_x - self.x) * self.speed_factor
       self.translate.x = self.x
+    # if the note has passed the left side of the window
+    if self.translate.x + self.note_heads[self.first_visible_note].get_x() <= 0:
+      self.note_heads[self.first_visible_note].hide()
+      self.first_visible_note += 1 # update pointer
+    # if the note will soon pass the right side of the window
+    if self.translate.x + self.note_heads[self.first_invisible_note].get_x() <= 2 * Window.width:
+      self.note_heads[self.first_invisible_note].show()
+      self.first_invisible_note += 1 # update pointer
+
 
   # should be passed to the input driver as a callback
   def on_note_hit(self, lane):
