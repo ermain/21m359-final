@@ -23,22 +23,27 @@ from topline_audio import *
 from topline_graphics import *
 from topline_input import *
 
+from kivy.core.window import Window
+
 import random
 import numpy as np
 
 from kinect import *
 
-kUseKinect = False 
-kUsingGlove = False
+kUseKinect = True 
+kUsingGlove = True
 
 # if this is set, assume Kinect/Synapse is running on a remote machine
 # and send/receive from that ip address
 kinect_remote_ip = None
 
+MAX_WIDTH = 1329
+#1329 723
 class MainWidget(BaseWidget) :
    def __init__(self):
       super(MainWidget, self).__init__()
 
+      Window.bind(on_resize=self.on_resize)
 
       self.audio = Audio()
       self.synth = Synth('common/FluidR3_GM.sf2')
@@ -51,14 +56,14 @@ class MainWidget(BaseWidget) :
          self.synth, self.audio)  
     
       self.note_data = GloveDisplayData("./glove/prelude_visuals.txt")
-      glove_pos = (400, 50)
+      glove_pos = (MAX_WIDTH/2., 100) # hardcoding size of maximized kivy screen
       self.note_display = GloveNoteDisplay(glove_pos, "./glove/circletexture.png", self.note_data)
       
       self.scroller = Scroller(self.note_display)
 
       self.glove_input = GloveInput(self.glove_audio_player.play_next_note, \
           self.note_display.on_note_hit, self.scroller.on_glove_hit, kUsingGlove)
-
+      register_terminate_func(self.glove_input.disable)
       self.glove_info = GloveInfo(self.glove_input, self.glove_audio_player.audio)
       #self.add_widget(self.glove_info)
       
@@ -69,14 +74,25 @@ class MainWidget(BaseWidget) :
       self.start = False
 
       self.topline_graphics = ToplineGraphics(self.note_display)
-      self.canvas.add(self.topline_graphics)
       self.canvas.add(self.note_display)
+      self.canvas.add(self.topline_graphics)
+      
       if kUseKinect:
          self.topline_input = KinectTopLine(self.songPlayer, self.topline_graphics, kinect_remote_ip)
       else:
          self.topline_input = ScreenTopLine(self.songPlayer, self.topline_graphics)
 
 
+   def on_resize(self, pygame_window, width, height):
+      #this is called automatically by kivy whenever you resize your window
+      #the width and height are the important/interesting args
+      #self.label.pos = (50, height-150) #makes this label always near the top
+
+      self.topline_graphics.redrawVerticalLine()
+      self.topline_graphics.drawGameCursor()
+     # self.note_display.pos = (width/2., height/2.)
+      #self.note_display.updatePos( (width/2., 50) )
+  
    def on_key_down(self, keycode, modifiers):
 
       if keycode[1] == 'c':
@@ -101,6 +117,9 @@ class MainWidget(BaseWidget) :
       if self.start == True:
          self.glove_input.on_button_up(keycode)
 
+   def on_touch_down(self, touch):
+      print touch.pos
+
    def on_update(self) :
       
       dt = kivyClock.frametime
@@ -108,7 +127,7 @@ class MainWidget(BaseWidget) :
 
          # start glovestuff
          self.glove_audio_player.on_update(dt)
-         self.glove_input.on_update()
+         self.glove_input.on_update(dt)
          self.glove_info.on_update()
          
          # end glovestuff
@@ -119,9 +138,13 @@ class MainWidget(BaseWidget) :
          if not self.topline_input.settingsMode:
             self.songPlayer.on_update(dt)
             self.topline_graphics.meshOn = self.songPlayer.notePlaying
-            self.topline_graphics.on_update(dt, self.songPlayer.notePlayer.currentGain)
+            #self.topline_graphics.on_update(dt, self.songPlayer.notePlayer.currentGain)
 
          self.note_display.on_update(dt, self.songPlayer.notePlayer.currentGain)
+
+
+
+
 def scaledX(x, min_val, max_val, a, b):
    return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 

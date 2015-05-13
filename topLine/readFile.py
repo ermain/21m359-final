@@ -1,4 +1,5 @@
 NOTE_TO_MIDI = {'C4':48,
+'G3':43,
 'C#4':49,
 'D4':50,
 'D#4':51,
@@ -22,7 +23,9 @@ NOTE_TO_MIDI = {'C4':48,
 'A5':69,
 'A#5':70,
 'B5':71,
-'C6':72}
+'C6':72,
+'D6':74,
+'E6':76}
 import re
 def noteToMidi(noteString):
 	return NOTE_TO_MIDI[noteString]

@@ -7,15 +7,13 @@ from kivy.uix.label import Label
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Mesh, Rectangle
 from kivy.core.image import Image
+from kivy.core.window import Window
 
-MESH_Y = 450.
-MESH_HEIGHT = 140
+
 class ToplineGraphics(InstructionGroup):
 
 	def __init__(self, gloveGraphics):
 		super(ToplineGraphics, self).__init__()
-
-
 
 		self.segments = 800
 
@@ -29,6 +27,7 @@ class ToplineGraphics(InstructionGroup):
 		
 
 		self.gloveGraphics = gloveGraphics
+		self.cursor = None
 		self.drawGameCursor()
 		self.color = Color(1,1,1)
 		self.add(self.color)
@@ -41,6 +40,9 @@ class ToplineGraphics(InstructionGroup):
 		#self.add(Color(1,1,1))
 		#r = Rectangle(pos=(0,450), size = (Window.size[0],50))
 		#self.add( r )
+
+	def redrawVerticalLine(self):
+		self.verticalLine.points = [Window.size[0]/2.,0,Window.size[0]/2,Window.size[1]]
 
 	def updateKinectSelection(self, pos):
 		if self.kinectJoint:
@@ -55,9 +57,9 @@ class ToplineGraphics(InstructionGroup):
 		#self.updateKinectSelection((491,295))
 
 	def drawBodySelectionCursor(self):
-		self.bodyImage = Rectangle(source='body.jpg', pos=(250,50), size=(275,500))
+		self.bodyImage = Rectangle(source='body.jpg', pos=(Window.size[0]/2. - 150,50), size=(300,600))
 		self.add(self.bodyImage)
-		self.cursor = Cursor3D((800,600), (0, 0), (1,0,0), False)
+		self.cursor = Cursor3D((Window.size[0],Window.size[1]), (0, 0), (1,0,0), False)
 		self.add(self.cursor)
 
 	def duetMode(self):
@@ -70,7 +72,10 @@ class ToplineGraphics(InstructionGroup):
 		self.drawGameCursor()
 
 	def drawGameCursor(self):
-		self.cursor = Cursor3D((780,MESH_HEIGHT*2), (10, MESH_Y-MESH_HEIGHT), self.gloveGraphics.future_color, False)
+		# 780, MESH_HEIGHT*2 # (10, MESH_Y-MESH_HEIGHT)
+		if self.cursor:
+			self.remove(self.cursor)
+		self.cursor = Cursor3D((Window.size[0],400), (0, 300), self.gloveGraphics.future_color, False)
 		self.add(self.cursor)
 
 	def set_pos(self,pos):
@@ -84,46 +89,7 @@ class ToplineGraphics(InstructionGroup):
 
 		return indexOfNote
 
-	def drawMesh(self):
-		imageFile = './topLine/background.png'
-		self.mesh = make_ribbon_mesh(100, MESH_Y, 300-1, MESH_Y, imageFile, self.segments)
-		self.add(self.mesh)
-		numPoints = len(self.mesh.vertices[5::8])
-		self.mesh.vertices[5::8] = [MESH_Y for x in range(0,numPoints)]
-		self.mesh.vertices = self.mesh.vertices
 
-		self.meshBottom = make_ribbon_mesh(100, MESH_Y, 300-1, MESH_Y, imageFile, self.segments)
-		self.add(self.meshBottom)
-		self.meshBottom.vertices[5::8] = [MESH_Y for x in range(0,numPoints)]
-		self.meshBottom.vertices = self.mesh.vertices
-
-
-   	def on_update(self, dt,y):
-   		'''
-		self.timeSinceUpdate+=dt
-
-		if self.timeSinceUpdate > 0.01:
-			self.timeSinceUpdate = 0
-
-			verticalVerticies = self.mesh.vertices[5::8]
-			shiftedDown = verticalVerticies[1:]
-			y = scaledX(y,0,1,MESH_Y, MESH_Y+MESH_HEIGHT)
-			shiftedDown.append(float(y))
-			if not self.meshOn:
-				shiftedDown = verticalVerticies[1:]
-				shiftedDown.append(MESH_Y)
-				self.mesh.vertices[5::8] = [x for x in shiftedDown]
-				self.meshBottom.vertices[5::8] = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
-			else:
-				self.mesh.vertices[5::8] = shiftedDown
-
-				self.meshBottom.vertices[5::8] = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
-
-			self.mesh.vertices = self.mesh.vertices
-			self.meshBottom.vertices = self.meshBottom.vertices
-
-		#self.time += kivyClock.frametime
-		'''
 def scaledX(x, min_val, max_val, a, b):
    return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 

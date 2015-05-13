@@ -5,6 +5,9 @@ import math
 sys.path.append('./common')
 from kinect import *
 import time
+
+from kivy.core.window import Window
+
 class ToplineInput(object):
   def __init__(self, songPlayer, display_callback):
     #if using_kinect:
@@ -25,15 +28,16 @@ class ToplineInput(object):
     totalTime = 0
     headHeights = 0 
     cnt = 0
-    time.sleep(3)
+    time.sleep(0.5)
     while totalTime < 2:
       self.kinect.on_update() 
       pt = self.kinect.get_joint(self.joint)
       pt_min = np.array([-1000.0, -1000, 0])
       pt_max = np.array([1000.0, 1000, 2000])
-      norm_pt = scale_point(pt, pt_min, pt_max)
-      headHeights += norm_pt[1]
-      cnt += 1.
+      norm_pt = scale_point(pt, pt_min, pt_max) 
+      if norm_pt[1] != 0:
+        headHeights += norm_pt[1]
+        cnt += 1.
       time.sleep(0.01)
       totalTime += 0.01
     self.calibratedHeadHeight = headHeights / cnt
@@ -47,7 +51,7 @@ class ToplineInput(object):
     norm_pt = scale_point(pt, pt_min, pt_max)
 
     if self.joint == kJointHead:
-      scaled = scaledX(norm_pt[1], self.calibratedHeadHeight-0.1, self.calibratedHeadHeight+0.1, 0., 1)
+      scaled = scaledX(norm_pt[1], self.calibratedHeadHeight-0.05, self.calibratedHeadHeight+0.05, 0., 1)
       #print norm_pt[1], avgY, scaled
 
       gain = min(1,max(0.01,scaled))
@@ -57,6 +61,7 @@ class ToplineInput(object):
     self.songPlayer.updateGain(gain)
 
     self.display_callback.set_pos(norm_pt)
+
     if not self.settingsMode: 
       # check if next note triggered
       if not (self.nextNoteCueOnLeft and norm_pt[0] < 0.5 or self.nextNoteCueOnLeft == False and norm_pt[0] > 0.5):
@@ -135,14 +140,14 @@ class KinectTopLine(ToplineInput):
       self.checkIfInJointRegion(norm_pt)
 
   def checkIfInJointRegion(self, pt):
-    if self.pointInRangeOf(pt, (0.62, 0.49), 0.05):
-      self.display_callback.updateKinectSelection( (491,295))
+    if self.pointInRangeOf(pt, (0.62, 0.49), 0.05): #left
+      self.display_callback.updateKinectSelection( (784,347))
       self.tempJoint = kJointRightHand
-    elif self.pointInRangeOf(pt, (0.36, 0.49), 0.05):
-      self.display_callback.updateKinectSelection((285.0, 292.0))
+    elif self.pointInRangeOf(pt, (0.36, 0.49), 0.05):  #left
+      self.display_callback.updateKinectSelection((546.0, 347.0))
       self.tempJoint = kJointLeftHand
-    elif self.pointInRangeOf(pt, (0.48, 0.80), 0.05):
-      self.display_callback.updateKinectSelection((387.0, 502.0))
+    elif self.pointInRangeOf(pt, (0.498, 0.8257), 0.05): #head
+      self.display_callback.updateKinectSelection((662.0, 597.0))
       self.tempJoint = kJointHead
 
 
@@ -158,7 +163,8 @@ class ScreenTopLine(ToplineInput):
 
   def on_update(self, pt):
     pt_min = np.array([0., 0., 0.])
-    pt_max = np.array([800., 600., 1.])
+
+    pt_max = np.array([Window.size[0], Window.size[1], 1.])
 
     self.updatePosition(pt, pt_min, pt_max)
 

@@ -88,7 +88,7 @@ class HandGlove(object):
             port=self.port,\
             baudrate=9600,\
             parity=serial.PARITY_NONE,\
-            timeout=0.01,\
+            timeout=1,\
             stopbits=serial.STOPBITS_ONE,\
             bytesize=serial.EIGHTBITS)
       print "opened port ", self.port

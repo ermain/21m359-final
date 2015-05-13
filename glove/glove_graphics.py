@@ -26,6 +26,9 @@ from readFile import *
 # shows info about the glove. for debugging purposes only.
 kShowGlobalConstants = True # in case we only want to display variables strictly
                             # related to the glove only
+
+MESH_Y = 400
+MESH_HEIGHT = 250              
 class GloveDisplayData(object):
   def __init__(self, filepath):
     self.notes = []
@@ -47,6 +50,7 @@ class GloveDisplayData(object):
     with open(filepath) as f:
       counter = 0
       for line in f.readlines():
+   
         if ":" in line:
           len, pattern = line.split(":")
 
@@ -54,7 +58,9 @@ class GloveDisplayData(object):
 
           for n in pattern:
             if n in "12345":
+            
               if counter in soloLineMap.keys():
+                print counter
                 soloNote = soloLineMap[counter]
               else:
                 soloNote = False
@@ -94,16 +100,16 @@ class GloveInfo(Widget):
     finger_vals = self.glove_input.get_state()
     self.label.text += "finger state: %s \n" % " ".join(str(x) for x in finger_vals)
 
-MESH_Y = 350.
-MESH_HEIGHT = 200
+
 class ToplineNoteHead(InstructionGroup):
   def __init__(self, pos, duration, future_color, past_color, spacing_per_lane, locationInSong):
     super(ToplineNoteHead, self).__init__()
     self.pos = pos
+
     self.duration = float(duration)
     self.spacing_per_lane = spacing_per_lane
 
-    future_color = (1,0,0)
+    future_color = (149/255, 165/255, 166/255)
     #past_color = (1,0,0)
 
     self.future_color = future_color
@@ -122,14 +128,6 @@ class ToplineNoteHead(InstructionGroup):
     self.noteHead.vertices[5::8] = [MESH_Y+MESH_HEIGHT for x in range(0,numPoints)]
     self.positionInMeshBeingUpdated = 0
     self.add(self.noteHead)
-
-    width = self.duration*(self.spacing_per_lane+4)*5
-    self.meshBottom = make_ribbon_mesh(self.pos[0]+1, MESH_Y, width, MESH_Y, imageFile, self.segments)
-    numPoints = len(self.meshBottom.vertices[5::8])
-    self.meshBottom.vertices[5::8] = [MESH_Y+MESH_HEIGHT for x in range(0,numPoints)]
-
-    #self.add(self.meshBottom)
-
 
     self.locationInSong = locationInSong
 
@@ -157,7 +155,6 @@ class ToplineNoteHead(InstructionGroup):
 
   def hide(self):
     self.remove(self.noteHead)
-    self.remove(self.meshBottom)
 
 # note head of the notes display
 class GloveNoteHead(InstructionGroup):
@@ -238,7 +235,7 @@ class GloveNoteDisplay(InstructionGroup):
     self.add(self.translate)
     
     self.start_pos = pos
-    cur_x = pos[0]
+    self.cur_x = pos[0]
     self.note_heads = []
     self.first_invisible_note = -1
     self.topline_noteheads = []
@@ -246,27 +243,27 @@ class GloveNoteDisplay(InstructionGroup):
     just_added = True
     counter = 0
     for n in data.get_all_notes():
-      self.note_heads.append(GloveNoteHead((cur_x, pos[1]), n[0], self.spacing_per_lane, \
+      self.note_heads.append(GloveNoteHead((self.cur_x, pos[1]), n[0], self.spacing_per_lane, \
          self.future_color, self.past_color, texture))
       self.add(self.note_heads[-1]) # we add the notes here but make sure to not add in the actual GloveNoteHead object
       if n[2] != False:
         # add a notehead above the current notehead if there should be 
         # a top solo line note there
 
-        g = ToplineNoteHead((cur_x, pos[1]+400), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane, locationInSong)
+        g = ToplineNoteHead((self.cur_x , pos[1]+MESH_Y), n[2].duration,  self.future_color, self.past_color, self.spacing_per_lane, locationInSong)
         if n[2].note != 'R':
           self.add(g)
         self.topline_noteheads.append(g)
         locationInSong += g.duration
       
       # show only a small set of notes
-      if cur_x <= 2 * Window.width:
+      if self.cur_x <= 2 * Window.width:
         self.note_heads[-1].show() # explicitly show here
       else:
         if just_added:
           self.first_invisible_note = counter # pointer to first invisible note (to be added)
           just_added = False
-      cur_x += n[1] * self.spacing_per_quarter
+      self.cur_x += n[1] * self.spacing_per_quarter
       counter += 1 
     self.x = 0
     self.target_x = 0
@@ -274,9 +271,13 @@ class GloveNoteDisplay(InstructionGroup):
     self.next_topline_note = 0
     self.first_visible_note = 0 # pointer to first visible note (to be removed)
     self.add(PopMatrix())
+
     self.num_notes = len(data.get_all_notes())
     self.keep_showing_notes = True
     self.keep_hiding_notes = True
+
+  def updatePos(self,pos):
+    self.pos = pos
 
   def scroll(self, dx):
     #print "scrolling"
@@ -306,11 +307,14 @@ class GloveNoteDisplay(InstructionGroup):
         if self.first_invisible_note >= self.num_notes:
           self.keep_showing_notes = False
 
+
+
     mesh = self.topline_noteheads[self.next_topline_note-1].noteHead
 
     #meshBottom = self.topline_noteheads[self.next_topline_note-1].meshBottom
 
     verticalVerticies = mesh.vertices[5::8]
+
     y = scaledX(y,0,1,MESH_Y, MESH_Y+MESH_HEIGHT)
     toplineObject = self.topline_noteheads[self.next_topline_note-1]
     position = toplineObject.positionInMeshBeingUpdated
@@ -323,7 +327,6 @@ class GloveNoteDisplay(InstructionGroup):
       shiftedDown = verticalVerticies[1:]
       shiftedDown.append(float(y))
 
-      shiftedDownBottom = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
     #if not self.meshOn:
     #  shiftedDown = verticalVerticies[1:]
     #  shiftedDown.append(MESH_Y)
