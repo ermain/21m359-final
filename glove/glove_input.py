@@ -72,7 +72,7 @@ class KeyboardGlove(object):
     pass
 
 class HandGlove(object):
-  finger_threshholds = [0.8, 0.8, 0.8, 0.9, 0.8]
+  finger_threshholds = [0.8, 0.8, 0.8, 0.9, 0.9]
   max_line_size = 100
   port = '/dev/tty.usbserial-AH00SBIQ' # '/dev/tty.HC-06-DevB'
   max_val = 570
@@ -88,10 +88,12 @@ class HandGlove(object):
             port=self.port,\
             baudrate=9600,\
             parity=serial.PARITY_NONE,\
-            timeout=1,\
+            timeout=0.01,\
             stopbits=serial.STOPBITS_ONE,\
             bytesize=serial.EIGHTBITS)
       print "opened port ", self.port
+      self.ser.flushInput()
+      self.ser.flushOutput()
     except serial.SerialException:
       print "cannot open port ", self.port, "error: ", sys.exc_info()[0]
     except:

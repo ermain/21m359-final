@@ -274,6 +274,9 @@ class GloveNoteDisplay(InstructionGroup):
     self.next_topline_note = 0
     self.first_visible_note = 0 # pointer to first visible note (to be removed)
     self.add(PopMatrix())
+    self.num_notes = len(data.get_all_notes())
+    self.keep_showing_notes = True
+    self.keep_hiding_notes = True
 
   def scroll(self, dx):
     #print "scrolling"
@@ -288,14 +291,20 @@ class GloveNoteDisplay(InstructionGroup):
       self.x += (self.target_x - self.x) * self.speed_factor
       self.translate.x = self.x
     # if the note has passed the left side of the window
-    if self.translate.x + self.note_heads[self.first_visible_note].get_x() <= 0:
-      self.note_heads[self.first_visible_note].hide()
-      self.first_visible_note += 1 # update pointer
+    if self.keep_hiding_notes:
+      if self.translate.x + self.note_heads[self.first_visible_note].get_x() <= 0:
+        self.note_heads[self.first_visible_note].hide()
+        self.first_visible_note += 1 # update pointer
+        if self.first_visible_note >= self.num_notes:
+          self.keep_hiding_notes = False
     # if the note will soon pass the right side of the window
-    if self.translate.x + self.note_heads[self.first_invisible_note].get_x() <= 2 * Window.width:
-      self.note_heads[self.first_invisible_note].show()
-      self.first_invisible_note += 1 # update pointer
-
+    if self.keep_showing_notes:
+      if self.translate.x + self.note_heads[self.first_invisible_note].get_x() <= \
+        2 * Window.width:       
+        self.note_heads[self.first_invisible_note].show()
+        self.first_invisible_note += 1 # update pointer
+        if self.first_invisible_note >= self.num_notes:
+          self.keep_showing_notes = False
 
     mesh = self.topline_noteheads[self.next_topline_note-1].noteHead
 
