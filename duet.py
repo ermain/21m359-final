@@ -30,15 +30,19 @@ import numpy as np
 
 from kinect import *
 
-kUseKinect = True 
-kUsingGlove = True
+#PLEASE SEE README.txt FOR RUNNING INSTRUCTIONS
+kUseKinect = False 
+kUsingGlove = False
 
 # if this is set, assume Kinect/Synapse is running on a remote machine
 # and send/receive from that ip address
 kinect_remote_ip = None
 
+# We ended up just hardcoding the maximum size of my window in fullsize
+# this caused an issue during our demo in class. we should have spent 
+# more time to actually get screen resize working dynamically, but for 
+# the purposes of our demo it worked fine...
 MAX_WIDTH = 1329
-#1329 723
 class MainWidget(BaseWidget) :
    def __init__(self):
       super(MainWidget, self).__init__()
@@ -84,14 +88,9 @@ class MainWidget(BaseWidget) :
 
 
    def on_resize(self, pygame_window, width, height):
-      #this is called automatically by kivy whenever you resize your window
-      #the width and height are the important/interesting args
-      #self.label.pos = (50, height-150) #makes this label always near the top
-
       self.topline_graphics.redrawVerticalLine()
       self.topline_graphics.drawGameCursor()
-     # self.note_display.pos = (width/2., height/2.)
-      #self.note_display.updatePos( (width/2., 50) )
+
   
    def on_key_down(self, keycode, modifiers):
 
@@ -124,33 +123,25 @@ class MainWidget(BaseWidget) :
       
       dt = kivyClock.frametime
       if self.start:
-
-         # start glovestuff
+         # update glove audio & graphics
          self.glove_audio_player.on_update(dt)
          self.glove_input.on_update(dt)
          self.glove_info.on_update()
          
-         # end glovestuff
-         
+         # update topline audio & graphics
          pt = [Window.mouse_pos[0], Window.mouse_pos[1], 0]
          self.topline_input.on_update(pt)
 
          if not self.topline_input.settingsMode:
             self.songPlayer.on_update(dt)
             self.topline_graphics.meshOn = self.songPlayer.notePlaying
-            #self.topline_graphics.on_update(dt, self.songPlayer.notePlayer.currentGain)
 
          self.note_display.on_update(dt, self.songPlayer.notePlayer.currentGain)
-
-
 
 
 def scaledX(x, min_val, max_val, a, b):
    return a + ((b-a)*(x-min_val)) / (max_val - min_val)
 
-#run(MainWidget)
-
-#kinect_remote_ip
 
 if len(sys.argv) >=2:
    kinect_remote_ip = sys.argv[1]

@@ -10,11 +10,6 @@ from kivy.core.window import Window
 
 class ToplineInput(object):
   def __init__(self, songPlayer, display_callback):
-    #if using_kinect:
-    #  self.topline = KinectTopLine(audio_callback, display_callback, scroller_callback)
-    #else:
-    #  self.topline = ScreenTopLine(audio_callback, display_callback, scroller_callback)
-
     self.songPlayer = songPlayer
     self.display_callback = display_callback
    
@@ -52,18 +47,15 @@ class ToplineInput(object):
 
     if self.joint == kJointHead:
       scaled = scaledX(norm_pt[1], self.calibratedHeadHeight-0.05, self.calibratedHeadHeight+0.05, 0., 1)
-      #print norm_pt[1], avgY, scaled
 
       gain = min(1,max(0.01,scaled))
     else:
-      #gain = min(1,max(0.01,(norm_pt[1] - 0.3) / .4))
       gain = norm_pt[1]
     self.songPlayer.updateGain(gain)
 
     self.display_callback.set_pos(norm_pt)
 
     if not self.settingsMode: 
-      # check if next note triggered
       if not (self.nextNoteCueOnLeft and norm_pt[0] < 0.5 or self.nextNoteCueOnLeft == False and norm_pt[0] > 0.5):
         return
       
@@ -86,12 +78,9 @@ class ToplineInput(object):
 class KinectTopLine(ToplineInput):
   def __init__(self, songPlayer, display_callback, ipAddress):
     ToplineInput.__init__(self, songPlayer, display_callback)
-    #self.songPlayer = songPlayer
-    #self.display_callback = display_callback
-    #self.scroller_callback = scroller_callback
 
     self.nextNoteCueOnLeft = False
-    self.joint = kJointRightHand# kJointHead 
+    self.joint = kJointRightHand
     self.kinect = Kinect(ipAddress)
     self.kinect.add_joint(self.joint)
     self.tempJoint = None

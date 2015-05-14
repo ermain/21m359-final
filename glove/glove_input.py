@@ -72,7 +72,7 @@ class KeyboardGlove(object):
     pass
 
 class HandGlove(object):
-  finger_threshholds = [0.8, 0.8, 0.8, 0.9, 0.9]
+  finger_threshholds = [0.8, 0.8, 0.8, 0.9, 0.8]
   max_line_size = 100
   port = '/dev/tty.usbserial-AH00SBIQ' # '/dev/tty.HC-06-DevB'
   max_val = 570

@@ -66,10 +66,3 @@ def parseSong():
 	   		se = SongElement(note, duration, dynamics)
 	   		sd.addElement(se)
 	return sd
-
-
-
-
-
-
-

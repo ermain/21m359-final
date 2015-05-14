@@ -22,7 +22,6 @@ class SongPlayer(object):
       else:
          self.notePlayer.stop_note()
          self.notePlaying = False
-      #self.indexInSong += 1
 
    def updateGain(self, gain):
       self.notePlayer.updateGain(gain)

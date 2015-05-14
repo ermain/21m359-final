@@ -60,7 +60,6 @@ class GloveDisplayData(object):
             if n in "12345":
             
               if counter in soloLineMap.keys():
-                print counter
                 soloNote = soloLineMap[counter]
               else:
                 soloNote = False
@@ -100,7 +99,11 @@ class GloveInfo(Widget):
     finger_vals = self.glove_input.get_state()
     self.label.text += "finger state: %s \n" % " ".join(str(x) for x in finger_vals)
 
-
+'''
+The topline notehead is a mesh with the note's duration. The 
+height of the mesh is adjusted dynamically as the user changes
+the audio gain.
+'''
 class ToplineNoteHead(InstructionGroup):
   def __init__(self, pos, duration, future_color, past_color, spacing_per_lane, locationInSong):
     super(ToplineNoteHead, self).__init__()
@@ -110,14 +113,11 @@ class ToplineNoteHead(InstructionGroup):
     self.spacing_per_lane = spacing_per_lane
 
     future_color = (149/255, 165/255, 166/255)
-    #past_color = (1,0,0)
 
     self.future_color = future_color
     self.past_color = past_color
     self.color = Color(*future_color)
     self.add(self.color)
-
-    #self.noteHead = Rectangle(pos=self.pos, size=(self.duration*(self.spacing_per_lane+4)*5, 50))
     
     self.segments = 200
    
@@ -133,7 +133,6 @@ class ToplineNoteHead(InstructionGroup):
 
   def set_lane(self, lane):
     self.pos = (self.base_pos[0], self.base_pos[1] )
-    #self.circle.pos = (self.pos[0] - self.w, self.pos[1] - self.w)
 
   def set_color_future(self):
     self.color.r = self.future_color[0]
@@ -170,19 +169,7 @@ class GloveNoteHead(InstructionGroup):
     self.past_color = past_color
     self.color = Color(*future_color)
     self.add(self.color)
-    """self.mesh = Mesh()
-    self.mesh.indices = [0,1,2,3]
-    self.mesh.vertices = [\
-        self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
-        self.pos[0] - self.w/2, self.pos[1] + self.h/2, 0, 1,\
-        self.pos[0] + self.w/2, self.pos[1] - self.h/2, 1, 0,\
-        self.pos[0] + self.w/2, self.pos[1] + self.h/2, 1, 1\
-        ]
-    if texture:
-      self.mesh.texture = Image(texture).texture
-    self.mesh.mode = "triangle_strip"
-    self.add(self.mesh)
-  """
+    
     self.circle = Rectangle(pos=self.pos)#Ellipse(segments = 5)
     self.circle.size = self.w*2, self.w*2
     self.circle.pos = (self.pos[0] , self.pos[1] - self.w)
@@ -190,12 +177,6 @@ class GloveNoteHead(InstructionGroup):
   def set_lane(self, lane):
     self.pos = (self.base_pos[0], self.base_pos[1] + lane*self.lane_spacing)
     self.circle.pos = (self.pos[0] , self.pos[1] - self.w)
-  """  self.mesh.vertices = [\
-        self.pos[0] - self.w/2, self.pos[1] - self.h/2, 0, 0,\
-        self.pos[0] - self.w/2, self.pos[1] + self.h/2, 0, 1,\
-        self.pos[0] + self.w/2, self.pos[1] - self.h/2, 1, 0,\
-        self.pos[0] + self.w/2, self.pos[1] + self.h/2, 1, 1\
-        ]"""
 
   def set_color_future(self):
     self.color.r = self.future_color[0]
@@ -280,11 +261,9 @@ class GloveNoteDisplay(InstructionGroup):
     self.pos = pos
 
   def scroll(self, dx):
-    #print "scrolling"
     self.target_x = self.target_x - dx
 
   def scroll_to_next_note(self):
-    #print self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter
     self.scroll(self.data.get_at_idx(self.next_note)[1]*self.spacing_per_quarter)
 
   def on_update(self, dt, y):
@@ -308,10 +287,8 @@ class GloveNoteDisplay(InstructionGroup):
           self.keep_showing_notes = False
 
 
-
+    # update the mesh vertices to reflect volume
     mesh = self.topline_noteheads[self.next_topline_note-1].noteHead
-
-    #meshBottom = self.topline_noteheads[self.next_topline_note-1].meshBottom
 
     verticalVerticies = mesh.vertices[5::8]
 
@@ -321,25 +298,14 @@ class GloveNoteDisplay(InstructionGroup):
     if self.topline_noteheads[self.next_topline_note-1].positionInMeshBeingUpdated == 0:
       shiftedDown = [y]*len(verticalVerticies)
       shiftedDownBottom = shiftedDown
-      #shiftedDown = verticalVerticies
       toplineObject.positionInMeshBeingUpdated += 1
     else:
       shiftedDown = verticalVerticies[1:]
       shiftedDown.append(float(y))
 
-    #if not self.meshOn:
-    #  shiftedDown = verticalVerticies[1:]
-    #  shiftedDown.append(MESH_Y)
-    #  self.mesh.vertices[5::8] = [x for x in shiftedDown]
-    #  self.meshBottom.vertices[5::8] = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
-    #else:
     mesh.vertices[5::8] = shiftedDown
-    #meshBottom.vertices[5::8] = shiftedDownBottom
-    #self.meshBottom.vertices[5::8] = [MESH_Y-(x-MESH_Y) for x in shiftedDown]
-
     self.topline_noteheads[self.next_topline_note-1].noteHead.vertices = mesh.vertices
-    #self.topline_noteheads[self.next_topline_note-1].meshBottom.vertices = meshBottom.vertices
-    #self.meshBottom.vertices = self.meshBottom.vertices
+
 
   # should be passed to the input driver as a callback
   def on_note_hit(self, lane):
@@ -355,7 +321,6 @@ class GloveNoteDisplay(InstructionGroup):
         return index
 
   def on_topline_note_hit(self):
-    # change color of note
     
     notehead = self.topline_noteheads[self.next_topline_note]
 
@@ -365,6 +330,8 @@ class GloveNoteDisplay(InstructionGroup):
       self.next_topline_note += 1
       return noteIndexToPlay
     else:
+      # if topline is 2 beats away from bottom line, jump the topline
+      # to the note they're supposed to be playing
       self.next_topline_note = self.getTopLineNoteClosestToBottom()
     return False
 
